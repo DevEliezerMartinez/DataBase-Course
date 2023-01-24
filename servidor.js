@@ -1,7 +1,12 @@
 // **importaciones de express
-const { json } = require('express');
+
 const express = require('express');
+const cors = require('cors');
 const app = express();
+
+app.use(express.urlencoded({extended:false}));
+app.use(express.json());
+app.use(cors());
 
 //*importaciones sqlite3
 
@@ -61,13 +66,13 @@ function closeDB(){
 // **INSERTANDO DATOS -CREATE
 app.post('/motocicletas/',(req,res)=>{
   let parametrosQuery = req.query;
-  
+  // ! parametros y valores: ?id=4&modelo=170z&año=2020&variante=full
 
  sql = `INSERT INTO motocicletas(id,modelo, año,variante) VALUES ( ${parametrosQuery.id} ,"${parametrosQuery.modelo}", ${parametrosQuery.año}, "${parametrosQuery.variante}")`
  
 
 db.run(sql, function(err) { if (err) {
-      return console.error(err.message);}
+      return console.error("Fallo: "+err.message);}
       console.log(`Sucessfully--Rows inserted ${this.changes}`);
       res.send(`se añadio la siguiente información: ${parametrosQuery}`)
   }); 
@@ -94,19 +99,22 @@ app.get('/modelos/:id',(req,res)=>{
 // **CONSULTA DE TODOS LOS DATOS --READ
 app.get('/modelos',(req,res)=>{
    
-  let querySelect = `SELECT * FROM motocicletas;`
- 
+  let querySelect = `SELECT * FROM motocicletas ORDER BY id;`
+  
    db.all(querySelect,(err,rows)=> {
 
    if(err){return console.error();} 
     // ** para recorrese 
    rows.forEach((rows) => {
-   // console.log(rows);
+   
+
   });
+  
 
   
    
    res.send(rows);
+   
    
   })
 
@@ -116,25 +124,35 @@ app.get('/modelos',(req,res)=>{
  
 
 // ** ACTUALIZANDO DATOS -- UPDATE
-app.patch('/modelos/:id',(req,res)=>{
-/* const parametros = req.params;
+app.patch('/modelos/:id/:variante',(req,res)=>{
+  const idParam = req.params.id;
+  const varianteParam = req.params.variante;
+
   
-const sqlUpdate ="UPDATE motocicletas SET variante='SPORT' WHERE id=3"
+const sqlUpdate =`UPDATE motocicletas SET variante="${varianteParam}" WHERE id=${idParam}`
 db.run(sqlUpdate,(err)=>{
-  if (err) {return console.error(err.message);}
+  if (err) {
+    return res.status(404).send("FALLO: "+err.message)
+  
+  }
 
   console.log(`Datos actualizados`);
-}); */
+  res.send({'estado':'ok'})
 });
 
+});
+
+
   // ** BORRANDO DATOS -- DELETE
-app.delete('/modelos',(req,res)=>{
-/* const consultaDelete = "DELETE FROM motocicletas WHERE id =4"
-db.run(consultaDelete,(err)=>{
-  if (err) { return console.error(err.message);}
+app.delete('/modelos/:id',(req,res)=>{
+  const idParam = req.params.id;
+  const consultaDelete = `DELETE FROM motocicletas WHERE id =${idParam}`
+  db.run(consultaDelete,(err)=>{
+  if (err) { return res.status(404).send(err.message);}
   console.log("Elemento borrado");
+  res.send(`ELEMENTO CON ID ${idParam} eliminado`)
 })
- */
+
 
 });
 
@@ -149,3 +167,4 @@ app.listen(8080,()=>{
 }); 
 
 // ** Cerrando la conexión
+
